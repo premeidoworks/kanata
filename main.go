@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	_ "github.com/premeidoworks/kanata/include"
+
 	"github.com/premeidoworks/kanata/handler"
 )
 

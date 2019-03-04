@@ -14,3 +14,6 @@
 # idea
 /.idea
 /*.iml
+
+# build include folder
+/include/*.go
