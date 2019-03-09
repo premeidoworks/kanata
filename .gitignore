@@ -14,6 +14,7 @@
 # idea
 /.idea
 /*.iml
-
-# build include folder
+# examples
+/kanata.toml
+# include folder
 /include/*.go

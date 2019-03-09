@@ -1,0 +1,11 @@
+[global]
+store_provider="pgx"
+uuid_provider="gouuid"
+
+[store.details]
+"User"=           "user"
+"Password"=       "password"
+"Host"=           "hostname"
+"Port"=           "5432"
+"Database"=       "messagequeue"
+"MaxConnections"= "10"
