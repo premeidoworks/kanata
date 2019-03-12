@@ -12,6 +12,40 @@ import (
 func Publish(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
+	case "POST":
+		{
+			err := prepareParams(w, r)
+			if err != nil {
+				log.Println("[ERROR] prepareParams error when Publish.", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			form := r.Form
+			//TODO support GET request
+			topic, err := requiredString(form.Get("topic"))
+			if err != nil {
+				log.Println("[ERROR] topic is empty when Publish.", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			//TODO need to follow protocol instruction
+			var _ = topic
+			messageBody := []byte(form.Get("message_body"))
+			msg := &api.Message{
+				Body: messageBody,
+			}
+			err = StoreProvider.SaveMessage(msg)
+			if err != nil {
+				log.Println("[ERROR] insert message error when Publish.", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			//TODO need to response correctly
+			w.WriteHeader(http.StatusOK)
+		}
 	// GET method only support simplest publish
 	case "GET":
 		{
@@ -74,40 +108,6 @@ func Publish(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			return
-		}
-	case "POST":
-		{
-			err := prepareParams(w, r)
-			if err != nil {
-				log.Println("[ERROR] prepareParams error when Publish.", err)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
-			form := r.Form
-			//TODO support GET request
-			topic, err := requiredString(form.Get("topic"))
-			if err != nil {
-				log.Println("[ERROR] topic is empty when Publish.", err)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
-			//TODO need to follow protocol instruction
-			var _ = topic
-			messageBody := []byte(form.Get("message_body"))
-			msg := &api.Message{
-				Body: messageBody,
-			}
-			err = StoreProvider.SaveMessage(msg)
-			if err != nil {
-				log.Println("[ERROR] insert message error when Publish.", err)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
-			//TODO need to response correctly
-			w.WriteHeader(http.StatusOK)
 		}
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
