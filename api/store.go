@@ -10,6 +10,7 @@ type Message struct {
 	Body         []byte
 	ScheduleTime int64
 	Status       int64
+	Type         int16
 	OutId        string
 	CreateTime   *time.Time
 }
