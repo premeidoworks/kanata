@@ -10,7 +10,7 @@ type Message struct {
 	Body         []byte
 	ScheduleTime int64
 	Status       int64
-	Type         int16
+	Type         int16 // 0 - at most once(pull mode)/at least once(push mode), 1 - exactly once
 	OutId        string
 	CreateTime   *time.Time
 }
