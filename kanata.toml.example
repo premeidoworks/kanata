@@ -1,6 +1,7 @@
 [global]
 store_provider="pgx"
 uuid_provider="gouuid"
+marshal_provider="default"
 
 [store.details]
 "User"=           "user"

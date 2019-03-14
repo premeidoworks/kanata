@@ -33,10 +33,10 @@ func main() {
 	mux := new(http.ServeMux)
 
 	mux.HandleFunc("/publish", handler.Publish)
-	mux.HandleFunc("/pre_publish", handler.PrePublish)
 	mux.HandleFunc("/acquire", handler.Publish)
 	mux.HandleFunc("/commit", handler.Publish)
 	mux.HandleFunc("/commit_publish", handler.CommitPublish)
+	mux.HandleFunc("/rollback_publish", handler.RollbackPublish)
 	mux.HandleFunc("/bind", handler.Publish)
 
 	store := api.GetStoreProvider(config.StoreProvider)
@@ -54,6 +54,12 @@ func main() {
 		log.Fatal(errors.New("no uuid provider found:[" + config.UUIDProvider + "]"))
 	}
 	handler.UUID_Generator = uuidGenerator
+
+	marshalProvider := api.GetmarshallingProvider(config.MarshalProvider)
+	if uuidGenerator == nil {
+		log.Fatal(errors.New("no marshal provider found:[" + config.MarshalProvider + "]"))
+	}
+	handler.MarshalProvider = marshalProvider
 
 	err = http.ListenAndServe(listenAddr, mux)
 	if err != nil {

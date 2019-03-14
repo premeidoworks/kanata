@@ -25,6 +25,7 @@ func GetmarshallingProvider(name string) MessageMarshal {
 }
 
 type PublishRequest struct {
+	Topic       string
 	MessageList []*struct {
 		MsgId    string
 		MsgOutId string

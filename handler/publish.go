@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 
@@ -10,7 +9,6 @@ import (
 )
 
 func Publish(w http.ResponseWriter, r *http.Request) {
-
 	switch r.Method {
 	case "POST":
 		{
@@ -21,93 +19,92 @@ func Publish(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			form := r.Form
-			//TODO support GET request
-			topic, err := requiredString(form.Get("topic"))
+			req, err := extractReq(r)
 			if err != nil {
-				log.Println("[ERROR] topic is empty when Publish.", err)
+				log.Println("[ERROR] parse param error when Publish.", err)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-
-			//TODO need to follow protocol instruction
-			var _ = topic
-			messageBody := []byte(form.Get("message_body"))
-			msg := &api.Message{
-				Body: messageBody,
-			}
-			err = StoreProvider.SaveMessage(msg)
+			pubreq, err := MarshalProvider.UnmarshalPublishRequest(req)
 			if err != nil {
-				log.Println("[ERROR] insert message error when Publish.", err)
+				log.Println("[ERROR] PublishRequest cannot be unmarshal when Publish.", err)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
 
-			//TODO need to response correctly
-			w.WriteHeader(http.StatusOK)
-		}
-	// GET method only support simplest publish
-	case "GET":
-		{
-			query := r.URL.Query()
-
-			topic, err := requiredString(query.Get("topic"))
-			if err != nil {
-				log.Println("[ERROR] topic is empty when Publish.", err)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			messageBody := []byte(query.Get("message"))
-			if len(messageBody) == 0 {
-				log.Println("[ERROR] message body is empty when Publish.", err)
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
-			topicId, err := core.GetTopic(topic)
+			topicId, err := core.GetTopic(pubreq.Topic)
 			if err != nil {
 				log.Println("[ERROR] no such topic when Publish.", err)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
 
-			idVal, err := UUID_Generator.Generate()
-			if err != nil {
-				log.Println("[ERROR] generate messageId error when Publish.", err)
-				w.WriteHeader(http.StatusBadRequest)
-				return
+			queueList := core.GetTopicQueues(topicId)
+
+			response := &api.PublishResponse{}
+
+			for _, m := range pubreq.MessageList {
+				idVal, err := UUID_Generator.Generate()
+				if err != nil {
+					log.Println("[ERROR] generate messageId error when Publish.", err)
+					response.FailIdList = append(response.FailIdList, &struct {
+						MsgId    string
+						MsgOutId string
+						Code     string
+					}{
+						MsgOutId: m.MsgOutId,
+						Code:     "generate messageId error",
+					})
+					continue
+				}
+
+				for _, queueId := range queueList {
+					msg := &api.Message{
+						MessageId: idVal,
+						Body:      m.MsgBody,
+						Queue:     queueId,
+						Topic:     topicId,
+						Status:    0,
+						OutId:     m.MsgOutId,
+					}
+					err = StoreProvider.SaveMessage(msg)
+					if err != nil {
+						log.Println("[ERROR] insert message error when Publish.", err)
+						response.FailIdList = append(response.FailIdList, &struct {
+							MsgId    string
+							MsgOutId string
+							Code     string
+						}{
+							MsgOutId: m.MsgOutId,
+							MsgId:    idVal,
+							Code:     "save message error",
+						})
+						continue
+					} else {
+						response.SuccessIdList = append(response.SuccessIdList, &struct {
+							MsgId    string
+							MsgOutId string
+						}{
+							MsgId:    idVal,
+							MsgOutId: m.MsgOutId,
+						})
+					}
+				}
 			}
 
-			queueList := core.GetTopicQueues(topicId)
-			for _, queueId := range queueList {
-				var _ = topic
-				msg := &api.Message{
-					MessageId: idVal,
-					Body:      messageBody,
-					Queue:     queueId,
-					Topic:     topicId,
-					Status:    0,
-				}
-				err = StoreProvider.SaveMessage(msg)
-				if err != nil {
-					log.Println("[ERROR] insert message error when Publish.", err)
-					w.WriteHeader(http.StatusBadRequest)
-					return
-				}
+			responseData, err := MarshalProvider.MarshalPublishResponse(response)
+			if err != nil {
+				log.Println("[ERROR] marshal publish response error when Publish.", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
 			}
 
 			w.WriteHeader(http.StatusOK)
-			result := map[string][]string{
-				"successList": []string{idVal},
-			}
-			data, _ := json.Marshal(result)
-			_, err = w.Write(data)
+			_, err = w.Write(responseData)
 			if err != nil {
-				log.Println("[ERROR] write response to client when Publish.", err)
-				w.WriteHeader(http.StatusBadRequest)
+				log.Println("[ERROR] write response error when Publish.", err)
 				return
 			}
-			return
 		}
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -115,7 +112,7 @@ func Publish(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func PrePublish(w http.ResponseWriter, r *http.Request) {
+func RollbackPublish(w http.ResponseWriter, r *http.Request) {
 
 }
 

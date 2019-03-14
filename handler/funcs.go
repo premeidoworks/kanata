@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 
 var UUID_Generator api.UUIDGenerator
 var StoreProvider api.Store
+var MarshalProvider api.MessageMarshal
 
 func prepareParams(w http.ResponseWriter, r *http.Request) (err error) {
 	header := r.Header
@@ -17,9 +19,8 @@ func prepareParams(w http.ResponseWriter, r *http.Request) (err error) {
 	if strings.HasPrefix(contentType, "multipart/form-data") {
 		r.Body = http.MaxBytesReader(w, r.Body, 2*1024*1024)
 		err = r.ParseMultipartForm(2 * 1024 * 1024)
-	} else if strings.HasPrefix(contentType, "application/x-www-form-urlencoded") {
-		r.Body = http.MaxBytesReader(w, r.Body, 2*1024*1024)
-		err = r.ParseForm()
+	} else {
+		err = errors.New("content-type not supported")
 	}
 	return
 }
@@ -42,6 +43,23 @@ func requiredString(param string) (result string, err error) {
 		result = param
 	}
 	return
+}
+
+func extractReq(r *http.Request) ([]byte, error) {
+	files := r.MultipartForm.File["req"]
+	if len(files) == 0 {
+		return nil, errors.New("param is empty")
+	}
+	fh := files[0]
+	f, err := fh.Open()
+	if err != nil {
+		return nil, errors.New("open multipart file error:" + err.Error())
+	}
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, errors.New("read multipart file error:" + err.Error())
+	}
+	return data, nil
 }
 
 func Acquire(w http.ResponseWriter, r *http.Request) {
