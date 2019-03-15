@@ -9,6 +9,7 @@ import (
 	_ "github.com/premeidoworks/kanata/include"
 
 	"github.com/premeidoworks/kanata/api"
+	"github.com/premeidoworks/kanata/core"
 	"github.com/premeidoworks/kanata/handler"
 )
 
@@ -32,12 +33,16 @@ func main() {
 
 	mux := new(http.ServeMux)
 
-	mux.HandleFunc("/publish", handler.Publish)
-	mux.HandleFunc("/acquire", handler.Publish)
-	mux.HandleFunc("/commit", handler.Publish)
-	mux.HandleFunc("/commit_publish", handler.CommitPublish)
-	mux.HandleFunc("/rollback_publish", handler.RollbackPublish)
-	mux.HandleFunc("/bind", handler.Publish)
+	//================
+	mux.HandleFunc("/publish", handler.OnPublish)
+	mux.HandleFunc("/commit_publish", handler.OnCommitPublish)
+	mux.HandleFunc("/rollback_publish", handler.OnRollbackPublish)
+
+	mux.HandleFunc("/acquire", handler.OnAcquire)
+	mux.HandleFunc("/commit", handler.OnCommit)
+
+	mux.HandleFunc("/bind", handler.OnBind)
+	//================
 
 	store := api.GetStoreProvider(config.StoreProvider)
 	if store == nil {
@@ -60,6 +65,9 @@ func main() {
 		log.Fatal(errors.New("no marshal provider found:[" + config.MarshalProvider + "]"))
 	}
 	handler.MarshalProvider = marshalProvider
+
+	core.Init()
+	handler.QueueManager = api.GetQueueManager("default")
 
 	err = http.ListenAndServe(listenAddr, mux)
 	if err != nil {

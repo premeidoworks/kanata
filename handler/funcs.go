@@ -12,6 +12,7 @@ import (
 var UUID_Generator api.UUIDGenerator
 var StoreProvider api.Store
 var MarshalProvider api.MessageMarshal
+var QueueManager api.QueueManager
 
 func prepareParams(w http.ResponseWriter, r *http.Request) (err error) {
 	header := r.Header
@@ -62,14 +63,6 @@ func extractReq(r *http.Request) ([]byte, error) {
 	return data, nil
 }
 
-func Acquire(w http.ResponseWriter, r *http.Request) {
-
-}
-
-func Commit(w http.ResponseWriter, r *http.Request) {
-
-}
-
-func Bind(w http.ResponseWriter, r *http.Request) {
+func OnBind(w http.ResponseWriter, r *http.Request) {
 
 }
