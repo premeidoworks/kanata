@@ -64,7 +64,13 @@ func OnPublish(w http.ResponseWriter, r *http.Request) {
 				Status:    0,
 				OutId:     m.MsgOutId,
 			}
-			return StoreProvider.SaveMessage(msg)
+			err := StoreProvider.SaveMessage(msg)
+			if err != nil {
+				return err
+			} else {
+				QueueManager.MarkPublished(queueId)
+				return nil
+			}
 		})
 		if err != nil {
 			log.Println("[ERROR] insert message error when Publish.", err)

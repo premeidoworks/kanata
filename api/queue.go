@@ -3,6 +3,10 @@ package api
 type QueueManager interface {
 	GetTopic(topic string) (int64, error)
 	ProcessTopic(topic int64, f func(queue int64) error) error
+	GetQueue(queue string) (int64, error)
+
+	MarkPublished(queue int64)
+	WaitPublication(queue int64) bool // true - new publication, false - timeout
 }
 
 var (

@@ -5,6 +5,11 @@ type MessageMarshal interface {
 	UnmarshalPublishRequest(data []byte) (*PublishRequest, error)
 	MarshalPublishResponse(p *PublishResponse) ([]byte, error)
 	UnmarshalPublishResponse(data []byte) (*PublishResponse, error)
+
+	MarshalAcquireRequest(a *AcquireRequest) ([]byte, error)
+	UnmarshalAcquireRequest(data []byte) (*AcquireRequest, error)
+	MarshalAcquireResponse(a *AcquireResponse) ([]byte, error)
+	UnmarshalAcquireResponse(data []byte) (*AcquireResponse, error)
 }
 
 var (
@@ -42,5 +47,16 @@ type PublishResponse struct {
 		MsgId    string
 		MsgOutId string
 		Code     string
+	}
+}
+
+type AcquireRequest struct {
+	Queue string
+}
+
+type AcquireResponse struct {
+	MessageList []*struct {
+		MsgId   string
+		MsgBody []byte
 	}
 }

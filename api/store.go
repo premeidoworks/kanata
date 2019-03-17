@@ -42,4 +42,6 @@ type Store interface {
 	Init(config *StoreInitConfig) error
 
 	SaveMessage(message *Message) error
+
+	ObtainOnceMessage(queue int64, maxCount int) ([]*Message, error)
 }
