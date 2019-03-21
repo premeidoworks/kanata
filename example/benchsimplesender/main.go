@@ -2,7 +2,10 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"mime/multipart"
@@ -15,9 +18,23 @@ import (
 	_ "github.com/premeidoworks/kanata/include"
 )
 
-var client = new(http.Client)
+var transport = &http.Transport{}
+var client = &http.Client{
+	Transport: transport,
+}
+
+var (
+	eachWorkerCnt int
+)
+
+func init() {
+	flag.IntVar(&eachWorkerCnt, "each", 100, "each worker count. -each=100")
+	flag.Parse()
+}
 
 func main() {
+	fmt.Println("each worker count:", eachWorkerCnt)
+
 	wg := new(sync.WaitGroup)
 
 	cnt := 100
@@ -27,7 +44,7 @@ func main() {
 	startTime := time.Now()
 	for i := 0; i < cnt; i++ {
 		go func() {
-			for k := 0; k < 100; k++ {
+			for k := 0; k < eachWorkerCnt; k++ {
 				each()
 			}
 			wg.Done()
@@ -75,6 +92,7 @@ func each() {
 		log.Fatal("send request error.", err)
 	}
 
+	var _, _ = io.Copy(ioutil.Discard, response.Body)
 	_ = response.Body.Close()
 
 }

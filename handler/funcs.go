@@ -63,6 +63,13 @@ func extractReq(r *http.Request) ([]byte, error) {
 	return data, nil
 }
 
+func keepAlive(w http.ResponseWriter, r *http.Request) {
+	c := r.Header.Get("connection")
+	if strings.ToLower(c) == "keep-alive" {
+		w.Header().Set("Connection", "Keep-Alive")
+	}
+}
+
 func OnBind(w http.ResponseWriter, r *http.Request) {
 
 }

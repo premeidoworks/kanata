@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"time"
 
 	_ "github.com/premeidoworks/kanata/include"
 
@@ -69,7 +70,11 @@ func main() {
 	core.Init()
 	handler.QueueManager = api.GetQueueManager("default")
 
-	err = http.ListenAndServe(listenAddr, mux)
+	server := &http.Server{Addr: listenAddr, Handler: mux}
+	server.IdleTimeout = 300 * time.Second
+	server.ReadTimeout = 10 * time.Second
+	server.SetKeepAlivesEnabled(true)
+	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
 	}
