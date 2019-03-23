@@ -7,12 +7,15 @@ import (
 	"strings"
 
 	"github.com/premeidoworks/kanata/api"
+	"github.com/premeidoworks/kanata/core"
 )
 
 var UUID_Generator api.UUIDGenerator
 var StoreProvider api.Store
 var MarshalProvider api.MessageMarshal
 var QueueManager api.QueueManager
+
+var IdGen *core.IdGen
 
 func prepareParams(w http.ResponseWriter, r *http.Request) (err error) {
 	header := r.Header

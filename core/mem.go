@@ -17,7 +17,7 @@ func Init() {
 			NotifyQueue: make(chan struct{}, 1),
 		},
 	}
-	api.RegisterQueueManger("default", qm)
+	api.RegisterQueueManager("default", qm)
 }
 
 type CoreQueueManager struct {

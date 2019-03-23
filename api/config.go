@@ -1,6 +1,8 @@
 package api
 
 type KanataConfig struct {
+	NodeId uint32
+
 	StoreProvider   string
 	UUIDProvider    string
 	MarshalProvider string

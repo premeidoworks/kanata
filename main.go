@@ -70,6 +70,8 @@ func main() {
 	core.Init()
 	handler.QueueManager = api.GetQueueManager("default")
 
+	handler.IdGen = core.NewIdGen(config.NodeId)
+
 	server := &http.Server{Addr: listenAddr, Handler: mux}
 	server.IdleTimeout = 300 * time.Second
 	server.ReadTimeout = 10 * time.Second

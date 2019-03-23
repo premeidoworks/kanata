@@ -34,7 +34,7 @@ func main() {
 		part, err := writer.CreateFormFile("req", "req.req")
 		_, _ = part.Write(data)
 		_ = writer.Close()
-		request, err := http.NewRequest("POST", "http://192.168.31.201:8888/acquire", body)
+		request, err := http.NewRequest("POST", "http://127.0.0.1:8888/acquire", body)
 		request.Header.Set("Content-Type", writer.FormDataContentType())
 		response, err := client.Do(request)
 		if err != nil {

@@ -42,7 +42,7 @@ func OnPublish(w http.ResponseWriter, r *http.Request) {
 
 	response := &api.PublishResponse{}
 	for _, m := range pubreq.MessageList {
-		idVal, err := UUID_Generator.Generate()
+		idVal, err := IdGen.Generate()
 		if err != nil {
 			log.Println("[ERROR] generate messageId error when Publish.", err)
 			response.FailIdList = append(response.FailIdList, &struct {
