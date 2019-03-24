@@ -18,7 +18,9 @@ import (
 	_ "github.com/premeidoworks/kanata/include"
 )
 
-var transport = &http.Transport{}
+var transport = &http.Transport{
+	MaxIdleConnsPerHost: 1000,
+}
 var client = &http.Client{
 	Transport: transport,
 }
@@ -93,6 +95,9 @@ func each() {
 	}
 
 	var _, _ = io.Copy(ioutil.Discard, response.Body)
-	_ = response.Body.Close()
+	err = response.Body.Close()
+	if err != nil {
+		log.Println("close body error.", err)
+	}
 
 }

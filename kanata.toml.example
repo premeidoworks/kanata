@@ -1,4 +1,5 @@
 [global]
+node_id = 1001
 store_provider="pgx"
 uuid_provider="gouuid"
 marshal_provider="default"
@@ -12,4 +13,5 @@ marshal_provider="default"
 "MaxConnections"= "10"
 "badger.dir" = "./tests/badgerdata"
 "badger.valudedir" = "./tests/badgerdata"
-"bbolt.file" = "./store.db"
+"bbolt.file" = "./tests/store.db"
+"leveldb.dir" = "./tests/leveldb"
