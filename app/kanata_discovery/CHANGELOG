@@ -1,0 +1,6 @@
+0.0.0 pre.01 (2019-04-27)
+-------------------------------------------------------------------------------
+- Feature: etcd backend
+- Feature: service publish
+- Feature: service pick one/all
+- Feature: node keepalive
