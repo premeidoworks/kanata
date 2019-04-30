@@ -1,3 +1,9 @@
+uncommitted
+-------------------------------------------------------------------------------
+- Feature: discovery server
+- Feature: packet encoding/decoding
+- Change: api visibility
+
 0.0.0 pre.01 (2019-04-27)
 -------------------------------------------------------------------------------
 - Feature: etcd backend

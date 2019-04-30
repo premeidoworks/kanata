@@ -13,6 +13,16 @@
 * [X] pick one/all
 * [ ] disable node
 
+ - benchmark:
+
+performance & memory usage
+ 
+* [ ] 60000 nodes online
+* [ ] one service with over 60000 nodes
+* [ ] 2 million nodes online + 0.1b services + services with over 60000 nodes
+
  - others:
 
-* [ ] arrange api visibility
+* [ ] replace magic numbers with configurations
+* [ ] shutdown
+* [ ] plugin support
