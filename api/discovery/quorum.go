@@ -1,4 +1,11 @@
-package kanata_discovery
+package discovery
+
+type WatchEvent int
+
+const (
+	WatchEventCreate WatchEvent = iota + 1
+	WatchEventDelete
+)
 
 type QuorumManager interface {
 	Start() error

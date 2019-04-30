@@ -4,11 +4,13 @@ import (
 	"context"
 	"time"
 
+	discovery_api "github.com/premeidoworks/kanata/api/discovery"
+
 	"go.etcd.io/etcd/clientv3"
 	"go.etcd.io/etcd/mvcc/mvccpb"
 )
 
-var _ QuorumManager = new(etcdManager)
+var _ discovery_api.QuorumManager = new(etcdManager)
 
 type etcdManager struct {
 	endpoints []string
@@ -55,7 +57,7 @@ func newContext(second time.Duration) context.Context {
 	return ctx
 }
 
-func (this *etcdManager) WatchServiceChange(prefix string, fn func(eventType WatchEvent, k, v string)) error {
+func (this *etcdManager) WatchServiceChange(prefix string, fn func(eventType discovery_api.WatchEvent, k, v string)) error {
 	go func() {
 		for {
 			watchChan := this.client.Watch(context.Background(), prefix, clientv3.WithPrefix())
@@ -65,9 +67,9 @@ func (this *etcdManager) WatchServiceChange(prefix string, fn func(eventType Wat
 			}
 			for _, ev := range wresp.Events {
 				if ev.Type == mvccpb.PUT {
-					fn(WatchEventCreate, string(ev.Kv.Key), string(ev.Kv.Value))
+					fn(discovery_api.WatchEventCreate, string(ev.Kv.Key), string(ev.Kv.Value))
 				} else if ev.Type == mvccpb.DELETE {
-					fn(WatchEventDelete, string(ev.Kv.Key), string(ev.Kv.Value))
+					fn(discovery_api.WatchEventDelete, string(ev.Kv.Key), string(ev.Kv.Value))
 				}
 			}
 		}
@@ -140,7 +142,7 @@ func (this *etcdManager) SessionHeatbeat(session int64) error {
 	return nil
 }
 
-func NewEtcdManager(endpoints []string) QuorumManager {
+func newEtcdManager(endpoints []string) discovery_api.QuorumManager {
 	etcd := new(etcdManager)
 	etcd.endpoints = endpoints
 

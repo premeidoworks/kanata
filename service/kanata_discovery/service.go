@@ -6,12 +6,35 @@ import (
 	"fmt"
 	"math/rand"
 	"sync"
+
+	discovery_api "github.com/premeidoworks/kanata/api/discovery"
 )
 
 const (
 	_DefaultTag = "$default"
 	_BufferSize = 1024
 )
+
+type serviceOpType int
+
+const (
+	_OpServiceTypeCreate serviceOpType = iota + 1
+	_OpServiceTypeDelete
+)
+
+type Discovery interface {
+	Start() error
+	GracefulShutdown() error
+
+	AcquireSession() (int64, error)
+	SessionHeatbeat(session int64) error
+
+	PublishService(node *Node, service, version string, tags []string, session int64) error
+	PickOneFromTag(service, version, tag string) (*Node, error)
+	PickAllFromTag(service, version, tag string) ([]*Node, error)
+}
+
+var _ Discovery = &discovery{}
 
 // path format:
 // characters: A-Za-z . _ -
@@ -22,7 +45,7 @@ type discovery struct {
 	serviceBufferChannel chan struct {
 		Key           string
 		Value         string
-		ServiceOpType ServiceOpType
+		ServiceOpType serviceOpType
 	}
 
 	// service/version -> tag -> struct 1. session -> Node  2. node list
@@ -34,16 +57,16 @@ type discovery struct {
 	servicePrefix       string
 	configurationPrefix string
 
-	quorumManager QuorumManager
+	quorumManager discovery_api.QuorumManager
 }
 
 func serviceMappingFirstKey(service, version string) string {
 	return service + "/" + version
 }
 
-func NewDiscovery(endpoints []string, namespace string) (*discovery, error) {
+func NewDiscovery(endpoints []string, namespace string) (Discovery, error) {
 	d := new(discovery)
-	d.quorumManager = NewEtcdManager(endpoints)
+	d.quorumManager = newEtcdManager(endpoints)
 
 	d.servicePrefix = fmt.Sprint("/", namespace, "/service/")
 	d.configurationPrefix = fmt.Sprint("/", namespace, "/configuration/")
@@ -54,7 +77,7 @@ func NewDiscovery(endpoints []string, namespace string) (*discovery, error) {
 	d.serviceBufferChannel = make(chan struct {
 		Key           string
 		Value         string
-		ServiceOpType ServiceOpType
+		ServiceOpType serviceOpType
 	}, _BufferSize)
 
 	return d, nil
@@ -143,7 +166,7 @@ func (this *discovery) processServiceChange() {
 		}
 		this.serviceStoreLock.Lock()
 		switch nodeChange.ServiceOpType {
-		case OpServiceTypeCreate:
+		case _OpServiceTypeCreate:
 			tagMap, ok := mapping[serviceMappingFirstKey(service, version)]
 			if !ok {
 				tagMap = make(map[string]*struct {
@@ -180,7 +203,7 @@ func (this *discovery) processServiceChange() {
 			}
 			newList = append(newList, nodeStruct)
 			tagServices.list = newList
-		case OpServiceTypeDelete:
+		case _OpServiceTypeDelete:
 			tagMap, ok := mapping[serviceMappingFirstKey(service, version)]
 			if !ok {
 				this.serviceStoreLock.Unlock()
@@ -206,20 +229,20 @@ func (this *discovery) processServiceChange() {
 	}
 }
 
-func (this *discovery) serviceChange(eventType WatchEvent, k, v string) {
+func (this *discovery) serviceChange(eventType discovery_api.WatchEvent, k, v string) {
 	switch eventType {
-	case WatchEventCreate:
+	case discovery_api.WatchEventCreate:
 		this.serviceBufferChannel <- struct {
 			Key           string
 			Value         string
-			ServiceOpType ServiceOpType
-		}{Key: k, Value: v, ServiceOpType: OpServiceTypeCreate}
-	case WatchEventDelete:
+			ServiceOpType serviceOpType
+		}{Key: k, Value: v, ServiceOpType: _OpServiceTypeCreate}
+	case discovery_api.WatchEventDelete:
 		this.serviceBufferChannel <- struct {
 			Key           string
 			Value         string
-			ServiceOpType ServiceOpType
-		}{Key: k, Value: v, ServiceOpType: OpServiceTypeDelete}
+			ServiceOpType serviceOpType
+		}{Key: k, Value: v, ServiceOpType: _OpServiceTypeDelete}
 	}
 }
 
