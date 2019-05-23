@@ -7,6 +7,10 @@ import (
 
 type Header [8]byte
 
+func NewHeader(packetType int, blockSize, blockCount int) Header {
+	return Header{1 << 4, byte(packetType), 0, 0, 0, 0, byte(blockCount >> 8), byte(blockCount)}
+}
+
 func parseHeader(buf []byte) Header {
 	h := Header{}
 	copy(h[:], buf)
@@ -20,46 +24,56 @@ func (this Header) Len() int {
 	return blockSize * blockCnt
 }
 
-type PacketType int
-
-const (
-	TypeRequestConnClose PacketType = iota + 1
-	TypeAcquireSessionReq
-	TypeAcquireSessionResp
-	TypeKeepAliveReq
-	TypeKeepAliveResp
-	TypePublishServiceReq
-	TypePublishServiceResp
-
-	UNKNOWN PacketType = 0xFFFFFFFF
-)
+type PacketType interface {
+	ParseFrom(prevBuf []byte, r io.Reader) (interface{}, error)
+	WriteTo(w io.Writer) error
+}
 
 func (this Header) Type() PacketType {
 	switch int(this[2-1]) {
 	case 1:
-		return TypeRequestConnClose
+		return new(RequestConnClose)
 	case 2:
-		return TypeAcquireSessionReq
+		return new(AcquireSessionReq)
 	case 3:
-		return TypeAcquireSessionResp
+		return new(AcquireSessionResp)
 	case 4:
-		return TypeKeepAliveReq
+		return new(KeepAliveReq)
 	case 5:
-		return TypeKeepAliveResp
+		return new(KeepAliveResp)
 	case 6:
-		return TypePublishServiceReq
+		return new(PublishServiceReq)
 	case 7:
-		return TypePublishServiceResp
+		return new(PublishServiceResp)
 	default:
-		return UNKNOWN
+		return UnknownReq{}
 	}
 }
 
-func (PacketType) ParseFrom(prevBuf []byte, r io.Reader) (interface{}, error) {
+type UnknownReq struct {
+}
+
+func (UnknownReq) WriteTo(w io.Writer) error {
+	return errors.New("unknown packet")
+}
+
+func (UnknownReq) ParseFrom(prevBuf []byte, r io.Reader) (interface{}, error) {
 	return nil, errors.New("unknown packet")
 }
 
 type RequestConnClose struct {
+}
+
+func (this *RequestConnClose) ParseFrom(prevBuf []byte, r io.Reader) (interface{}, error) {
+	return this, nil
+}
+
+func (this *RequestConnClose) WriteTo(w io.Writer) error {
+	h := NewHeader(1, 0, 1)
+	b := make([]byte, 64)
+	copy(b[:8], h[:])
+	_, err := w.Write(b)
+	return err
 }
 
 type AcquireSessionReq struct {
