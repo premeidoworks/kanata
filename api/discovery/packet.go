@@ -25,7 +25,7 @@ func (this Header) Len() int {
 }
 
 type PacketType interface {
-	ParseFrom(prevBuf []byte, r io.Reader) (interface{}, error)
+	ParseFrom(h Header, prevBuf []byte, r io.Reader) (interface{}, error)
 	WriteTo(w io.Writer) error
 }
 
@@ -57,14 +57,14 @@ func (UnknownReq) WriteTo(w io.Writer) error {
 	return errors.New("unknown packet")
 }
 
-func (UnknownReq) ParseFrom(prevBuf []byte, r io.Reader) (interface{}, error) {
+func (UnknownReq) ParseFrom(h Header, prevBuf []byte, r io.Reader) (interface{}, error) {
 	return nil, errors.New("unknown packet")
 }
 
 type RequestConnClose struct {
 }
 
-func (this *RequestConnClose) ParseFrom(prevBuf []byte, r io.Reader) (interface{}, error) {
+func (this *RequestConnClose) ParseFrom(h Header, prevBuf []byte, r io.Reader) (interface{}, error) {
 	return this, nil
 }
 
@@ -79,13 +79,45 @@ func (this *RequestConnClose) WriteTo(w io.Writer) error {
 type AcquireSessionReq struct {
 }
 
+func (this *AcquireSessionReq) ParseFrom(h Header, prevBuf []byte, r io.Reader) (interface{}, error) {
+	return this, nil
+}
+
+func (this *AcquireSessionReq) WriteTo(w io.Writer) error {
+	h := NewHeader(2, 0, 1)
+	b := make([]byte, 64)
+	copy(b[:8], h[:])
+	_, err := w.Write(b)
+	return err
+}
+
 type AcquireSessionResp struct {
+	SessionId int64
+	Timeout   int32
+}
+
+func (this *AcquireSessionResp) ParseFrom(h Header, prevBuf []byte, r io.Reader) (interface{}, error) {
+	this.SessionId = bytesToInt64(prevBuf[:8])
+	this.Timeout = bytesToInt32(prevBuf[8:12])
+	return this, nil
+}
+
+func (this *AcquireSessionResp) WriteTo(w io.Writer) error {
+	h := NewHeader(3, 0, 1)
+	b := make([]byte, 64)
+	copy(b[:8], h[:])
+	copy(b[8:16], int64toBytes(this.SessionId))
+	copy(b[16:20], int32toBytes(this.Timeout))
+	_, err := w.Write(b)
+	return err
 }
 
 type KeepAliveReq struct {
+	SessionId int64
 }
 
 type KeepAliveResp struct {
+	Result byte // 0 - success, 1 - session invalid
 }
 
 type PublishServiceReq struct {
@@ -121,6 +153,6 @@ func ParseFrom(reader io.Reader) (Header, interface{}, error) {
 	}
 	h := parseHeader(headerBuf[:8])
 
-	i, err := h.Type().ParseFrom(headerBuf[8:], reader)
+	i, err := h.Type().ParseFrom(h, headerBuf[8:], reader)
 	return h, i, err
 }
