@@ -116,8 +116,36 @@ type KeepAliveReq struct {
 	SessionId int64
 }
 
+func (this *KeepAliveReq) ParseFrom(h Header, prevBuf []byte, r io.Reader) (interface{}, error) {
+	this.SessionId = bytesToInt64(prevBuf[:8])
+	return this, nil
+}
+
+func (this *KeepAliveReq) WriteTo(w io.Writer) error {
+	h := NewHeader(4, 0, 1)
+	b := make([]byte, 64)
+	copy(b[:8], h[:])
+	copy(b[8:16], int64toBytes(this.SessionId))
+	_, err := w.Write(b)
+	return err
+}
+
 type KeepAliveResp struct {
 	Result byte // 0 - success, 1 - session invalid
+}
+
+func (this *KeepAliveResp) ParseFrom(h Header, prevBuf []byte, r io.Reader) (interface{}, error) {
+	this.Result = prevBuf[0]
+	return this, nil
+}
+
+func (this *KeepAliveResp) WriteTo(w io.Writer) error {
+	h := NewHeader(4, 0, 1)
+	b := make([]byte, 64)
+	copy(b[:8], h[:])
+	b[8] = this.Result
+	_, err := w.Write(b)
+	return err
 }
 
 type PublishServiceReq struct {
