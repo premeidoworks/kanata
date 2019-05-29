@@ -140,7 +140,7 @@ func (this *KeepAliveResp) ParseFrom(h Header, prevBuf []byte, r io.Reader) (int
 }
 
 func (this *KeepAliveResp) WriteTo(w io.Writer) error {
-	h := NewHeader(4, 0, 1)
+	h := NewHeader(5, 0, 1)
 	b := make([]byte, 64)
 	copy(b[:8], h[:])
 	b[8] = this.Result
@@ -149,9 +149,43 @@ func (this *KeepAliveResp) WriteTo(w io.Writer) error {
 }
 
 type PublishServiceReq struct {
+	SessionId int64
+
+	Service  string
+	Version  string
+	Tags     []string
+	NodeData []byte
+}
+
+func (this *PublishServiceReq) ParseFrom(h Header, prevBuf []byte, r io.Reader) (interface{}, error) {
+	//TODO
+	panic("implement me")
+}
+
+func (this *PublishServiceReq) WriteTo(w io.Writer) error {
+	//TODO
+	panic("implement me")
 }
 
 type PublishServiceResp struct {
+	Result byte  // 0 - success, 1 - error
+	Code   int32 // error code
+}
+
+func (this *PublishServiceResp) ParseFrom(h Header, prevBuf []byte, r io.Reader) (interface{}, error) {
+	this.Result = prevBuf[0]
+	this.Code = bytesToInt32(prevBuf[1:5])
+	return this, nil
+}
+
+func (this *PublishServiceResp) WriteTo(w io.Writer) error {
+	h := NewHeader(7, 0, 1)
+	b := make([]byte, 64)
+	copy(b[:8], h[:])
+	b[8] = this.Result
+	copy(b[9:13], int32toBytes(this.Code))
+	_, err := w.Write(b)
+	return err
 }
 
 // packet format:
