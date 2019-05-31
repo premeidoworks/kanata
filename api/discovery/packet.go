@@ -11,6 +11,12 @@ func NewHeader(packetType int, blockSize, blockCount int) Header {
 	return Header{1 << 4, byte(packetType), 0, 0, 0, 0, byte(blockCount >> 8), byte(blockCount)}
 }
 
+func NewHeaderWithRestBodySize(packetType int, blockSize int, restSize int) (Header, int) {
+	h := NewHeader(packetType, blockSize, 1+restSize/64+1) //TODO need follow the protocol
+	padding := (restSize/64+1)*64 - restSize
+	return h, padding
+}
+
 func parseHeader(buf []byte) Header {
 	h := Header{}
 	copy(h[:], buf)
@@ -22,6 +28,10 @@ func (this Header) Len() int {
 	blockSize := 64
 	blockCnt := ((int(this[8-1]) & 0xFF) << 8) + (int(this[8-1]) & 0xFF)
 	return blockSize * blockCnt
+}
+
+func (this Header) BlockSize() int {
+	return 64 //TODO need follow the protocol
 }
 
 type PacketType interface {
@@ -150,21 +160,64 @@ func (this *KeepAliveResp) WriteTo(w io.Writer) error {
 
 type PublishServiceReq struct {
 	SessionId int64
+	Data      []byte
 
-	Service  string
-	Version  string
-	Tags     []string
-	NodeData []byte
+	Detail struct {
+		Service  string
+		Version  string
+		Tags     []string
+		NodeData []byte
+	}
 }
 
 func (this *PublishServiceReq) ParseFrom(h Header, prevBuf []byte, r io.Reader) (interface{}, error) {
-	//TODO
-	panic("implement me")
+	this.SessionId = bytesToInt64(prevBuf[0:8])
+	dataLen := bytesToInt32(prevBuf[8:12])
+	restLen := h.Len() - h.BlockSize()
+	if restLen < int(dataLen) {
+		return nil, errors.New("length field value is not <= rest data length")
+	}
+	buf := make([]byte, h.Len()-h.BlockSize())
+	_, err := io.ReadFull(r, buf)
+	if err != nil {
+		return nil, err
+	}
+	this.Data = buf[:dataLen]
+	return this, nil
 }
 
 func (this *PublishServiceReq) WriteTo(w io.Writer) error {
+	dataLen := len(this.Data)
+
+	h, padding := NewHeaderWithRestBodySize(6, 0, len(this.Data))
+	b := make([]byte, 64)
+	copy(b[:8], h[:])
+	copy(b[8:16], int64toBytes(this.SessionId))
+	copy(b[16:20], int32toBytes(int32(dataLen)))
+
+	_, err := w.Write(b)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(this.Data)
+	if err != nil {
+		return err
+	}
+	if padding > 0 {
+		_, err = w.Write(make([]byte, padding))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (this *PublishServiceReq) ParseData() error {
 	//TODO
-	panic("implement me")
+}
+
+func (this *PublishServiceReq) GenerateData() error {
+	//TODO
 }
 
 type PublishServiceResp struct {
