@@ -55,6 +55,10 @@ func (this Header) Type() PacketType {
 		return new(PublishServiceReq)
 	case 7:
 		return new(PublishServiceResp)
+	case 8:
+		return new(PickByTagReq)
+	case 9:
+		return new(PickByTagResp)
 	default:
 		return UnknownReq{}
 	}
@@ -239,6 +243,12 @@ func (this *PublishServiceResp) WriteTo(w io.Writer) error {
 	copy(b[9:13], int32toBytes(this.Code))
 	_, err := w.Write(b)
 	return err
+}
+
+type PickByTagReq struct {
+}
+
+type PickByTagResp struct {
 }
 
 // packet format:
